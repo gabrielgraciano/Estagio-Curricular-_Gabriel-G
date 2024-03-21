@@ -1,0 +1,30 @@
+---
+title: "Metodologia EC"
+format: html
+editor: visual
+---
+
+## Metodologia EC
+
+Meu projeto tem três objetivos:
+
+1.  Analisar descritivamente, a partir da estratificação por **estado**, **faixa** **etária** e **sexo**, a **incidência** das doenças tropicais negligenciadas no Brasil, nas últimas décadas.
+
+2.  Analisar a tendência da **incidência** das doenças tropicais negligenciadas no Brasil nas últimas décadas.
+
+3.  Desenvolver um observatório online e de acesso público que exiba diferentes ferramentas interativas para monitoramento das DTNs no Brasil.
+
+Preciso, portanto, dos dados da população brasileira ao longo dos anos, de pelo menos, a última década separados por sexo, faixa etária e estado. Como o IBGE realiza censos a cada dez anos, meus dados são limitados a projeções estatísticas feitas pelo próprio IBGE. No site do instituto, eles fornecem essas projeções. Encontrei duas:
+
+1.  <https://www.ibge.gov.br/estatisticas/sociais/populacao/9103-estimativas-de-populacao.html?edicao=17283&t=downloads>
+2.  <https://www.ibge.gov.br/estatisticas/sociais/populacao/9109-projecao-da-populacao.html>
+
+A primeira diz se tratar de uma estimativa, ao passo que a segunda é uma projeção. Não sei ao certo a diferença entre ambos, sei que a primeira não estratifica por sexo ou idade, ao passo que a segunda o faz. Dado o escopo de minha análise, acredito que utilizar os dados da segunda fonte será mais frutuoso.
+
+Agora, acredito que meu foco deve ser a tentativa de obtenção de um banco de dados estratificado por idade e faixa etária para que eu possa começar os plots. Ademais, preciso pensar em como elaborarei minha ui, já que existem diversos pacotes disponíveis. Acredito que o bslib possa ser mais frutuoso em função do tempo, já que se apodera de um bootstrap mais atualizado.
+
+Para a obtenção do banco de dados, primeiro preciso definir a fórmula da incidência. A incidência é dada por:
+
+$$
+{\color{white} I = \frac{Casos_t}{População_t}}
+$$
