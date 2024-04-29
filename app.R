@@ -9,6 +9,7 @@
 
 library(shiny)
 library(ggplot2)
+library(bslib)
 data(penguins, package = "palmerpenguins")
 
 cards <- list(
