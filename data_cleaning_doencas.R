@@ -43,11 +43,35 @@ ggplot(dados_sp, aes(x = Ano)) +
 
 
 
+
+
+# Definir as cores para cada sexo
+cores <- c('lightblue', 'pink', 'brown')
+
+# Criar um gráfico vazio
+p <- ggplot(dados_sp, aes(x = Ano))
+
+# Adicionar linhas para cada sexo usando um loop for
+for (sexo in nomes_sexo) {
+  p <- p + geom_line(aes_string(y = sexo, color = sexo), data = dados_sp) +
+    scale_color_manual(values = cores[match(sexo, nomes_sexo)])
+}
+
+# Adicionar rótulos aos eixos e título
+p <- p + labs(title = 'Casos de Chikungunya em São Paulo por Ano e Sexo',
+              x = 'Ano',
+              y = 'Número de Casos') +
+  scale_color_identity()
+
+# Exibir o gráfico
+print(p)
+
+
+
 ########guardando
-ggplot(dados_filtrados, aes(x = Ano, y = input$selecao_sexo)) +
-  geom_line() +
-  labs(title = "Número de casos de Chikungunya ao longo do tempo",
-       x = "Ano",
-       y = "Número de Casos") +
-  scale_y_continuous(labels = scales::comma)
+ggplot(dados_filtrados, aes(x = Ano)) +
+  geom_line(aes_string(y = y_var), color = 'lightblue') +
+  labs(title = 'Casos de Chikungunya em São Paulo por Ano e Sexo',
+       x = 'Ano',
+       y = 'Número de Casos')
 

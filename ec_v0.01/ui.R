@@ -11,8 +11,11 @@ nomes_ufs <- c("Rondônia", "Acre", "Amazonas", "Roraima",
                "Rio de Janeiro", "São Paulo", "Paraná", "Santa Catarina", "Rio Grande do Sul", 
                "Mato Grosso do Sul", "Mato Grosso", "Goiás", "Distrito Federal")
 
-nomes_sexo <- c('Feminino', 'Masculino', 'Ambos')
-
+nomes_sexo <- c(
+  'Masculino' = 'Casos_M_total',
+  'Feminino' = 'Casos_F_total',
+  'Ambos' = 'Casos_total'
+)
  cards <- list(
   card(
     full_screen = TRUE,
