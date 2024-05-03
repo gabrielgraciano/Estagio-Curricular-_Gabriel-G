@@ -22,19 +22,26 @@ server <- function(input, output) {
          #           "Feminino" = "Casos_F_total",
           #          "Ambos" = "Casos_total")
     
+    
+    
+    
+    
     # Plotar o gráfico apenas se houver dados disponíveis para a UF selecionada
     if (nrow(dados_filtrados) > 0) {
       p <- ggplot(dados_filtrados, aes(x = Ano))
-      for (sexo in input$selecao_sexo){
-        p <- p + geom_line(aes_string(y = sexo, color = sexo), data = dados_filtrados)
+      print(input$selecao_sexo)
+      if('Casos_M_total' %in% input$selecao_sexo){
+        print('Masculino presente')
+        p <- p + geom_line(aes_string(y = dados_filtrados$Casos_M_total), color = 'lightblue')
       }
-      p <- p + labs(title = 'Casos de Chikungunya por ano e sexo',
-                    x = 'Ano',
-                    y = 'Número de casos')
-        
-      p
+      if('Casos_F_total' %in% input$selecao_sexo){
+        p <- p +  geom_line(aes_string(y = dados_filtrados$Casos_F_total), color = 'pink')
+      }
+      if('Casos_total' %in% input$selecao_sexo){
+        p <- p + geom_line(aes_string(y = dados_filtrados$Casos_total), color = 'purple')
+      }
       
-        
+      p
     } else {
       # Se não houver dados disponíveis, exibir uma mensagem informativa
       ggplot() + 

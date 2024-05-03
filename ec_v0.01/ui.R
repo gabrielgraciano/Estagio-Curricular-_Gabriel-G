@@ -16,6 +16,7 @@ nomes_sexo <- c(
   'Feminino' = 'Casos_F_total',
   'Ambos' = 'Casos_total'
 )
+
  cards <- list(
   card(
     full_screen = TRUE,

@@ -26,6 +26,8 @@ nomes_sexo <- c(
   'Ambos' = 'Casos_total'
 )
 
+cores_sexo <- c('lightblue', 'pink', 'brown')
+
 # Filtrar os dados para São Paulo
 dados_sp <- dados_chik %>%
   filter(UF == 'São Paulo')
@@ -69,9 +71,46 @@ print(p)
 
 
 ########guardando
-ggplot(dados_filtrados, aes(x = Ano)) +
-  geom_line(aes_string(y = y_var), color = 'lightblue') +
-  labs(title = 'Casos de Chikungunya em São Paulo por Ano e Sexo',
-       x = 'Ano',
-       y = 'Número de Casos')
+if (nrow(dados_filtrados) > 0) {
+  p <- ggplot(dados_filtrados, aes(x = Ano))
+  for (sexo in input$selecao_sexo){
+    p <- p + geom_line(aes_string(y = sexo), color = 'lightblue')
+  }
+  p <- p + labs(title = 'Casos de Chikungunya por ano e sexo',
+                x = 'Ano',
+                y = 'Número de casos')
+  
+  
+  
+  p
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  if (nrow(dados_filtrados) > 0) {
+    p <- ggplot(dados_filtrados, aes(x = Ano))
+    for (sexo in input$selecao_sexo){
+      cores_do_sexo <- switch(sexo,
+                              "Masculino" = 'lightblue',
+                              "Feminino" = 'pink',
+                              "Ambos" = 'purple')
+      p <- p + geom_line(aes_string(y = sexo), color = cores_do_sexo)
+    }
+    p <- p + labs(title = 'Casos de Chikungunya por ano e sexo',
+                  x = 'Ano',
+                  y = 'Número de casos')
+    
+    p
+  }
+  
+  
+}
 
