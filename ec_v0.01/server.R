@@ -8,10 +8,17 @@ server <- function(input, output) {
     dados_filtrados_2 <- dados_chik%>%
       filter(UF %in% input$selecao_uf[2])
     
+    
+
+    
     #Não acabei!
-    if('Masculino' %in% input$selecao_sexo){
-      dados_masculinos_1 <- dados_filtrados%>%
-        filter(nomes_faixa_etaria_masc %in% dados_filtrados)
+    if('Casos_M_total' %in% input$selecao_sexo){
+      print('Aqui está rodando')
+      dados_filtrados <- dados_filtrados%>%
+        select(c(Ano, UF), contains('M'))
+      dados_filtrados <- dados_filtrados%>%
+        mutate(dados_faixa_etaria_masculino =rowSums(cbind(dados_filtrados[[input$selecao_idade[1]]], 
+                                                           dados_filtrados[[input$selecao_idade[2]]]), na.rm = TRUE))
     }
 
     # Verificar se alguma UF foi selecionada
@@ -30,7 +37,7 @@ server <- function(input, output) {
       print(input$selecao_sexo)
       if('Casos_M_total' %in% input$selecao_sexo){
         print('Masculino presente')
-        p <- p + geom_line(aes_string(y = dados_filtrados$Casos_M_total), color = 'lightblue')
+        p <- p + geom_line(aes_string(y = dados_filtrados$dados_faixa_etaria_masculino), color = 'lightblue') + theme_minimal()
       }
       if('Casos_F_total' %in% input$selecao_sexo){
         p <- p +  geom_line(aes_string(y = dados_filtrados$Casos_F_total), color = 'pink')

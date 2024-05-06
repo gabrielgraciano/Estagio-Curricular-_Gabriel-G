@@ -27,9 +27,31 @@ nomes_faixa_etaria_masc <- c(
   'Menor que 1 ano' = 'Casos_1M',
   'De 1 a 4 anos' = 'Casos_1_4M',
   'De 5 a 9 anos' = 'Casos_5_9M',
-  'De 10 a 14 anos' = 'Casos_10_14M'
-  
+  'De 10 a 14 anos' = 'Casos_10_14M',
+  'De 15 a 19 anos' = 'Casos_15_19M',
+  'De 20 a 39 anos' = 'Casos_20_39M',
+  'De 40 a 59 anos' = 'Casos_40_59M',
+  'De 60 a 64 anos' = 'Casos_60_64M',
+  'De 65 a 69 anos' = 'Casos_65_69M',
+  'De 70 a 79 anos' = 'Casos_70_79M',
+  '80 anos ou mais' = 'Casos_80M'
 )
+
+nomes_faixa_etaria_fem <- c(
+  'Todas' = 'Casos_F_total',
+  'Menor que 1 ano' = 'Casos_1F',
+  'De 1 a 4 anos' = 'Casos_1_4F',
+  'De 5 a 9 anos' = 'Casos_5_9F',
+  'De 10 a 14 anos' = 'Casos_10_14F',
+  'De 15 a 19 anos' = 'Casos_15_19F',
+  'De 20 a 39 anos' = 'Casos_20_39F',
+  'De 40 a 59 anos' = 'Casos_40_59F',
+  'De 60 a 64 anos' = 'Casos_60_64F',
+  'De 65 a 69 anos' = 'Casos_65_69F',
+  'De 70 a 79 anos' = 'Casos_70_79F',
+  '80 anos ou mais' = 'Casos_80F'
+)
+
 
 #Definindo cards de plots
  cards <- list(
@@ -54,7 +76,7 @@ selecionar_sexo <-
 
 selecionar_idade <-
   pickerInput('selecao_idade', 'Selecione o intervalo de faixa etária desejado',
-              choices = c(nomes_faixa_etaria),
+              choices = c(nomes_faixa_etaria_masc),
               multiple = TRUE)
 
 #ui
