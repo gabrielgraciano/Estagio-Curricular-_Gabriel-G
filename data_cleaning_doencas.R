@@ -3,30 +3,13 @@ library(dplyr)
 
 dados_chik <- read.csv('dados/dados_chik.csv')
 
-dados_chik$Ano <- as.numeric(dados_chik$Ano)
-dados_chik$Casos_total <- as.numeric(dados_chik$Casos_total)
-dados_chik$Casos_M_total <- as.numeric(dados_chik$Casos_M_total)
-dados_chik$Casos_F_total <- as.numeric(dados_chik$Casos_F_total)
-dados_chik$Casos_1M <- as.numeric(dados_chik$Casos_1M)
-dados_chik$Casos_1_4M <- as.numeric(dados_chik$Casos_1_4M)
-dados_chik$Casos_5_9M <- as.numeric(dados_chik$Casos_5_9M)
-dados_chik$Casos_10_14M <- as.numeric(dados_chik$Casos_10_14M)
-dados_chik$Casos_15_19M <- as.numeric(dados_chik$Casos_15_19M)
+#Transformando os dados em numeric: ~ essencial
+coluna_a_manter <- 'UF'
+dados_chik <- dados_chik %>%
+  mutate_if(names(.) != coluna_a_manter, as.numeric)
 
-class(dados_chik$Casos_1M)
 
-somando <- function(...) {
-  total <- 0
-  for (valor in list(...)) {
-    valor <- replace(valor, is.na(valor), 0)  # Substitui NA por 0
-    total <- total + valor
-  }
-  return(total)
-}
 
-# Exemplo de uso da função somando
-resultado <- somando(3, NA, 5, 7, NA, 10)
-print(resultado)  # Deve imprimir 25
 
 
 
