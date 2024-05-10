@@ -3,6 +3,7 @@ library(ggplot2)
 library(bslib)
 library(shinyWidgets)
 library(tidyverse)
+library(dplyr)
 
 #Definindo dicionários para melhorar a estética dos picker inputs
 nomes_ufs <- c("Rondônia", "Acre", "Amazonas", "Roraima",
@@ -73,6 +74,13 @@ nomes_faixa_etaria <- list(
     full_screen = TRUE,
     card_header("Série Temporal"),
     plotOutput("serie_temp_chik")
+    
+  ),
+  card(
+    full_screen = TRUE,
+    card_header('Tabelas'),
+    card_header('Tabelass'),
+    tableOutput('tabelachik')
   )
 )
 
@@ -93,16 +101,23 @@ selecionar_idade <-
               choices = c(nomes_faixa_etaria),
               multiple = TRUE)
 
+selecionar_ano <-
+  pickerInput('selecao_ano', 'Selecione os anos de interesse',
+              choices = unique(dados_chik$Ano),
+              multiple = F)
+
 #ui
 ui <- page_sidebar(
   title = "EC1 - Gabriel",
   sidebar = list(
     selecionar_ufs,
     selecionar_sexo,
-    selecionar_idade
+    selecionar_idade,
+    selecionar_ano
   ),
   navset_card_underline(
     title = 'Séries temporais',
-    nav_panel('Testando', cards[[1]])
+    nav_panel('Testando', cards[[1]]),
+    nav_panel('Estatística Descritiva', cards[[2]])
   )
 )

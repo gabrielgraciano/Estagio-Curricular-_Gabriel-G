@@ -1,4 +1,44 @@
 server <- function(input, output) {
+
+  
+  dados_processados <- reactive({
+    dados_tabelas <- dados_chik%>%
+      filter(UF %in% input$selecao_uf[1] & Ano %in% input$selecao_ano)
+    
+    if('Casos_F_total' %in% input$selecao_sexo){
+      dados_tabelas <- dados_tabelas%>%
+        select(contains('F'))%>%
+        select(-UF)
+
+    }
+    if('Casos_M_total' %in% input$selecao_sexo){
+      dados_tabelas <- dados_tabelas%>%
+        select(contains('M'))
+    }
+    
+    resultados_tabela <- list()
+  
+   for (i in 1:11){
+    proporcao_tabela <- round(dados_tabelas[[i]]/dados_tabelas[[12]] * 100, digits = 3)
+      resultados_tabela[[i]] <- paste0(sprintf('%.2f', proporcao_tabela), '%')
+    }
+    
+    tab_casos_chik <- as.data.frame(cbind(
+      c('Menor que 1 ano', 'De 1 a 4 anos', 'De 5 a 9 anos', 'De 10 a 14 anos',
+        'De 15 a 19 anos', 'De 20 a 39 anos', 'De 40 a 59 anos', 'De 60 a 64 anos',
+        'De 65 a 69 anos', 'De 70 a 79 anos', '80 anos ou mais'),
+      resultados_tabela
+    ))
+    
+    colnames(tab_casos_chik) <- c('Faixa Etária', 'Porcentagem')
+    
+    return(tab_casos_chik)
+    
+  })
+
+  output$tabelachik <- renderTable(
+    dados_processados()
+      )
   
   #gerar plot de série temporal
   output$serie_temp_chik <- renderPlot({
@@ -22,11 +62,6 @@ server <- function(input, output) {
       dados_filtrados <- dados_filtrados%>%
         mutate(dados_faixa_etaria_masculino =rowSums(cbind(dados_filtrados[[input$selecao_idade[1]]], 
                                                            dados_filtrados[[input$selecao_idade[2]]]), na.rm = TRUE))
-      dados_filtrados <- dados_filtrados%>%
-        select(c(Ano, UF), contains('F'))
-      dados_filtrados <- dados_filtrados%>%
-        mutate(dados_faixa_etaria_feminina_teste = rowSums(cbind(dados_filtrados[[input$selecao_idade[1]]],
-                                                                 dados_filtrados[[input$selecao_idade[2]]]), na.rm = TRUE))
     }
     
     if('Casos_M_total' %in% input$selecao_sexo){
@@ -78,7 +113,7 @@ server <- function(input, output) {
         p <- p + geom_line(aes_string(y = dados_filtrados$dados_faixa_etaria_masculino), color = 'lightblue') + theme_minimal()
       }
       if('Casos_F_total' %in% input$selecao_sexo){
-        p <- p +  geom_line(aes_string(y = dados_filtrados$dados_faixa_etaria_feminina_teste), color = 'pink') + theme_minimal()
+        p <- p +  geom_line(aes_string(y = dados_filtrados$dados_faixa_etaria_feminino), color = 'pink') + theme_minimal()
       }
       if('Casos_total' %in% input$selecao_sexo){
         p <- p + geom_line(aes_string(y = dados_filtrados$Casos_total), color = 'purple')
