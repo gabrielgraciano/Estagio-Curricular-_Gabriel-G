@@ -1,0 +1,12 @@
+name: app_dengue
+title: app_dengue
+username: gabrielgracianodias
+account: gabrielgracianodias
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 12010558
+bundleId: 8620641
+url: https://gabrielgracianodias.shinyapps.io/app_dengue/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE

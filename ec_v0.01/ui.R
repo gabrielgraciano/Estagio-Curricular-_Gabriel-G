@@ -4,6 +4,7 @@ library(bslib)
 library(shinyWidgets)
 library(tidyverse)
 library(dplyr)
+library(arrow)
 
 #Definindo dicionários para melhorar a estética dos picker inputs
 nomes_ufs <- c("Rondônia", "Acre", "Amazonas", "Roraima",
