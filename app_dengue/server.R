@@ -61,9 +61,38 @@ server <- function(input, output) {
     
   })
   
+  dados_fx_et <- reactive({
+    req(input$update)
+    
+    query_fx_et <- 
+      sprintf(
+        "SELECT * from dengue_data.dados_faixa_etaria
+WHERE UF = '%s' AND
+year = '%s'", input$uf, input$ano)
+    dados_fx_et <- dbGetQuery(mysqlconnection, query_fx_et)
+      
+  })
   
-  output$tabela <- renderTable({
-    data()
+  
+
+  
+  output$piram_et <- renderPlot({
+    dados_fx_et <- dados_fx_et()
+    piramide <- dados_fx_et%>%
+      ggplot()+
+      aes(y = age_group, x = counting, fill = sex)+
+      scale_fill_manual(values = c('#ed9400', '#049899'))+
+      scale_x_continuous(labels = abs)+
+      geom_col()+
+      theme_minimal()+
+      labs(
+        x = 'População',
+        y = 'Faixa Etária',
+        fill = 'Sexo',
+        title = sprintf("Pirâmide etária para o ano de %s", input$ano),
+        caption = 'Fonte: Datasus - coleta realizada em 14/05/2024'
+      )
+    piramide
   })
   
   output$monthplot <- renderPlot({
