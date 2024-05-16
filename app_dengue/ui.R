@@ -18,15 +18,15 @@ cards <- list(
   )
 )
 
-selecionar_sexo <- pickerInput("sexo", "Selecione o sexo:", choices = unique(dados_dengue$CS_SEXO))
+selecionar_sexo <- pickerInput("sexo", "Selecione o sexo:", choices = c('M', 'F'))
 
-selecionar_uf <- pickerInput("uf", "Selecione a UF:", choices = unique(dados_dengue$SG_UF))
+selecionar_uf <- pickerInput("uf", "Selecione a UF:", choices = c('São Paulo'))
 
 selecionar_idade <- sliderInput('idade', 'Selecione o intervalo de idade desejado', min = 0, max = 100, value= c(0,100))
 
 selecionar_data <- dateRangeInput("data", "Selecione a data de início e fim da análise:",
-               start = min(dados_dengue$DT_NOTIFIC),
-               end = max(dados_dengue$DT_NOTIFIC))
+                                  start = "2010-01-01", end = "2024-05-31",
+                                  min = "2010-01-01", max = "2024-05-31")
 
 botao <- actionButton("update", "Atualizar plot")
 

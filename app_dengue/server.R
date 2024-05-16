@@ -4,7 +4,7 @@ library(ggplot2)
 
 server <- function(input, output) {
   
-  dados_plot <- reactive({
+ " dados_plot <- reactive({
     req(input$update)
     
     # Ensure correct data transformation and summarization
@@ -33,6 +33,51 @@ server <- function(input, output) {
       scale_x_date(date_breaks = '1 year', date_labels = '%Y-%m')  # Ensure this matches the data's format
     
     p
+  })"
+  
+  data <- reactive({
+    req(input$uf, input$data)
+    req(input$update)
+    
+    query_time_series <- sprintf(
+      
+      "
+      SELECT 
+        STR_TO_DATE(CONCAT(YEAR(DT_SIN_PRI), '-', LPAD(MONTH(DT_SIN_PRI), 2, '0'), '-01'), '%%Y-%%m-%%d') AS YearMonth,
+        COUNT(*) AS NumberOfCases
+      FROM 
+        notifications
+      WHERE 
+        SG_UF = '%s' AND
+        DT_SIN_PRI BETWEEN '%s' AND '%s' AND
+        idade_anos BETWEEN '%s' AND '%s'
+      GROUP BY 
+        STR_TO_DATE(CONCAT(YEAR(DT_SIN_PRI), '-', LPAD(MONTH(DT_SIN_PRI), 2, '0'), '-01'), '%%Y-%%m-%%d')
+      ORDER BY 
+        YearMonth
+    ", input$uf, format(input$data[1]), format(input$data[2]), format(input$idade[1]), format(input$idade[2]))
+    
+    db_data <- dbGetQuery(mysqlconnection, query_time_series)
+    
+  })
+  
+  
+  output$tabela <- renderTable({
+    data()
+  })
+  
+  output$monthplot <- renderPlot({
+    dengue_cases <- data()
+    dengue_cases$YearMonth <- as.Date(dengue_cases$YearMonth)
+    plot <- ggplot(dengue_cases, aes(x = YearMonth, y = NumberOfCases, group = 1)) +  # Ensure grouping if necessary
+      geom_line(color = "blue") +  # Draw lines connecting the points
+      geom_point(color = "red") +  # Add points at each data point
+      labs(title = "Dengue Case Counts Over Time",
+           x = "Year-Month",
+           y = "Number of Cases") +
+      theme_minimal() +
+      theme(axis.text.x = element_text(angle = 90, hjust = 1))  # Rotate x-axis labels for readability
+    plot
   })
 }
 
