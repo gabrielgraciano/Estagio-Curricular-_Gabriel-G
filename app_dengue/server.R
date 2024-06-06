@@ -35,8 +35,79 @@ server <- function(input, output) {
     p
   })"
   
+  dados_fx_et <- reactive({
+    req(input$update)
+    
+    query_fx_et <- sprintf(
+      "SELECT * FROM dengue_piramide_etaria WHERE UF = '%s' AND year = '%s'",
+      input$uf, input$ano
+    )
+    dados_fx_et <- dbGetQuery(mysqlconnection, query_fx_et)
+    
+    # Garantir que 'counting' seja numérico, escrevi errado, escrevi couting
+    dados_fx_et$couting <- as.numeric(dados_fx_et$couting)
+    
+    levels_faixa_etaria <- c('0-4', '5-9', '10-14', '15-19', '20-24', '25-29', '30-34', '35-39', 
+                             '40-44', '45-49', '50-54', '55-59', '60-64', '65-69', '70-74', 
+                             '75-79', '80-84', '85-89', '90 ou mais')
+    dados_fx_et$faixa_etaria <- factor(dados_fx_et$faixa_etaria, levels = levels_faixa_etaria, ordered = TRUE)
+    
+    
+    # Verificar se há linhas após a consulta
+    if (nrow(dados_fx_et) == 0) {
+      showNotification("Nenhum dado encontrado para os parâmetros selecionados.", type = "error")
+      return(NULL)
+    }
+    
+    return(dados_fx_et)
+  })
+  
+  dados_barplot <- reactive({
+    req(input$uf)
+    req(input$update)
+    
+    # Query
+    query_barplot <- sprintf("
+    select 
+        year,
+        uf,
+        sex,
+        sum(counting) as total_count
+    from 
+        dengue_ano
+    where
+        sex IN ('Masculino', 'Feminino') and
+        uf = '%s' AND
+        uf not in ('Ignorado')
+    group by
+        year, uf, sex
+    order by
+        year, uf, sex", input$uf)
+    
+    dados_barplot <- dbGetQuery(mysqlconnection, query_barplot)
+    
+    return(dados_barplot)
+  })
+  
+  "
+SELECT 
+    year,
+    uf,
+    sex,
+    SUM(counting) AS total_count
+FROM 
+    dengue_ano
+WHERE
+   sex IN ('Masculino', 'Feminino') AND
+   uf NOT IN ('Ignorado')
+GROUP BY 
+    year, uf, sex
+ORDER BY 
+    year, uf, sex;
+"
+  
   data <- reactive({
-    req(input$uf, input$sexo, input$data, input$faixa_etaria)
+    req(input$uf, input$sexo, input$faixa_etaria)
     req(input$update)
     
     # Definir o filtro de sexo com base na entrada do usuário
@@ -118,21 +189,32 @@ server <- function(input, output) {
 
   
   output$piram_et <- renderPlotly({
-    # Ensure you fetch or compute dados_fx_et here correctly
-    dados_fx_et <- dados_fx_et()  # Assuming dados_fx_et() is a reactive expression
+    dados_fx_et <- dados_fx_et()
+    
+    # Verificar se os dados não são nulos
+    req(dados_fx_et)
+    
+    # Verificar se há linhas após a filtragem por sexo
+    dados_masculino <- dados_fx_et[dados_fx_et$sex == "Masculino", ]
+    dados_feminino <- dados_fx_et[dados_fx_et$sex == "Feminino", ]
+    
+    if (nrow(dados_masculino) == 0 & nrow(dados_feminino) == 0) {
+      showNotification("Nenhum dado encontrado para os sexos selecionados.", type = "error")
+      return(NULL)
+    }
     
     # Create the plotly plot directly
     piramide <- plot_ly() %>%
-      add_trace(data = dados_fx_et[dados_fx_et$sex == "Masculino", ],
-                x = ~counting, y = ~age_group, type = 'bar', orientation = 'h',
+      add_trace(data = dados_masculino,
+                x = ~-couting, y = ~faixa_etaria, type = 'bar', orientation = 'h',
                 name = 'Male', marker = list(color = '#049899')) %>%
-      add_trace(data = dados_fx_et[dados_fx_et$sex == "Feminino", ],
-                x = ~counting, y = ~age_group, type = 'bar', orientation = 'h',
+      add_trace(data = dados_feminino,
+                x = ~-couting, y = ~faixa_etaria, type = 'bar', orientation = 'h',
                 name = 'Female', marker = list(color = '#ed9400')) %>%
       layout(
         barmode = 'overlay',
-        xaxis = list(title = 'População', tickvals = seq(-max(abs(dados_fx_et$counting)), max(abs(dados_fx_et$counting)), by = 10000),
-                     ticktext = abs(seq(-max(abs(dados_fx_et$counting)), max(abs(dados_fx_et$counting)), by = 10000))),
+        xaxis = list(title = 'População', showticklabels = FALSE, tickvals = seq(-max(abs(dados_fx_et$couting)), max(abs(dados_fx_et$couting)), by = 10000),
+                     ticktext = abs(seq(-max(abs(dados_fx_et$couting)), max(abs(dados_fx_et$couting)), by = 10000))),
         yaxis = list(title = 'Faixa Etária'),
         title = sprintf("Pirâmide etária para o ano de %s", input$ano),
         legend = list(title = list(text = 'Sexo')),
@@ -153,6 +235,29 @@ server <- function(input, output) {
     
     piramide
   })
+  
+  output$barplot_porcentagem <- renderPlot({
+    dados_barplot <- dados_barplot()
+    
+    barplot_dados <- dados_barplot%>%
+      group_by(year)%>%
+      mutate(percentage = total_count/ sum(total_count) * 100)%>%
+      ggplot(aes(x = factor(year), y = percentage, fill = sex))+
+      geom_bar(stat = 'identity', position = 'fill')+
+      scale_y_continuous(labels = scales::percent_format())+
+      labs(title = paste0("Distribuição Percentual de Casos de Dengue por Ano em ", unique(dados_barplot$uf)),
+           x = "Ano",
+           y = "Porcentagem",
+           fill = "Sexo") +
+      theme_minimal()+
+      theme(
+        axis.text.x = element_text(angle = 45, hjust = 1), # Rotacionar os rótulos do eixo x para melhor legibilidade
+        panel.grid.major.x = element_blank(), # Remover as linhas de grade principais no eixo x
+        panel.grid.minor.x = element_blank()  # Remover as linhas de grade menores no eixo x
+      )
+    barplot_dados
+  } 
+  )
   
   output$monthplot <- renderPlot({
     dengue_cases <- data()
