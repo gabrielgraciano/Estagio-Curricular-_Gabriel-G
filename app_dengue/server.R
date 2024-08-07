@@ -1,9 +1,21 @@
 library(lubridate)
 library(dplyr)
 library(ggplot2)
+shapefile_path <- "C:/Users/gabir/Documents/GitHub/Estagio-Curricular-_Gabriel-G/dados/shapefile_br_2022/BR_UF_2022.shp"
+
+uf_mapping <- data.frame(
+  uf = c("Acre", "Alagoas", "Amapá", "Amazonas", "Bahia", "Ceará", "Distrito Federal", 
+         "Espírito Santo", "Goiás", "Maranhão", "Mato Grosso", "Mato Grosso do Sul", 
+         "Minas Gerais", "Pará", "Paraíba", "Paraná", "Pernambuco", "Piauí", 
+         "Rio de Janeiro", "Rio Grande do Norte", "Rio Grande do Sul", "Rondônia", 
+         "Roraima", "Santa Catarina", "São Paulo", "Sergipe", "Tocantins"),
+  sigla = c("AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", 
+            "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", 
+            "SP", "SE", "TO")
+)
 
 server <- function(input, output) {
-  
+  #bs_themer(gfonts = TRUE, gfonts_update = FALSE)
  " dados_plot <- reactive({
     req(input$update)
     
@@ -35,6 +47,7 @@ server <- function(input, output) {
     p
   })"
   
+  #dados para a pirâmide etária
   dados_fx_et <- reactive({
     req(input$update)
     
@@ -207,16 +220,16 @@ ORDER BY
     piramide <- plot_ly() %>%
       add_trace(data = dados_masculino,
                 x = ~-couting, y = ~faixa_etaria, type = 'bar', orientation = 'h',
-                name = 'Male', marker = list(color = '#049899')) %>%
+                name = 'Masculino', marker = list(color = '#049899')) %>%
       add_trace(data = dados_feminino,
                 x = ~-couting, y = ~faixa_etaria, type = 'bar', orientation = 'h',
-                name = 'Female', marker = list(color = '#ed9400')) %>%
+                name = 'Feminino', marker = list(color = '#ed9400')) %>%
       layout(
         barmode = 'overlay',
         xaxis = list(title = 'População', showticklabels = FALSE, tickvals = seq(-max(abs(dados_fx_et$couting)), max(abs(dados_fx_et$couting)), by = 10000),
                      ticktext = abs(seq(-max(abs(dados_fx_et$couting)), max(abs(dados_fx_et$couting)), by = 10000))),
         yaxis = list(title = 'Faixa Etária'),
-        title = sprintf("Pirâmide etária para o ano de %s", input$ano),
+        title = sprintf("Pirâmide etária para o ano de %s", input$ano,"em '%s'", input$uf),
         legend = list(title = list(text = 'Sexo')),
         annotations = list(
           x = 1,
@@ -244,6 +257,7 @@ ORDER BY
       mutate(percentage = total_count/ sum(total_count) * 100)%>%
       ggplot(aes(x = factor(year), y = percentage, fill = sex))+
       geom_bar(stat = 'identity', position = 'fill')+
+      scale_fill_manual(values = c('Masculino' = '#049899', 'Feminino' = '#ed9400')) + 
       scale_y_continuous(labels = scales::percent_format())+
       labs(title = paste0("Distribuição Percentual de Casos de Dengue por Ano em ", unique(dados_barplot$uf)),
            x = "Ano",
@@ -259,34 +273,444 @@ ORDER BY
   } 
   )
   
-  output$monthplot <- renderPlot({
+  output$monthplot <- renderHighchart({
     dengue_cases <- data()
+    
+    # Verificar se há dados após a filtragem
+    if (nrow(dengue_cases) == 0) {
+      showNotification("Nenhum dado encontrado para os filtros selecionados.", type = "error")
+      return(NULL)
+    }
     
     # Criar rótulos de cor baseados na combinação de uf e sexo
     dengue_cases <- dengue_cases %>%
       mutate(label = paste(uf, sex, sep = ", "))
     
-    # Criar uma paleta de cores baseada nos rótulos
-    unique_labels <- unique(dengue_cases$label)
-    color_palette <- setNames(rainbow(length(unique_labels)), unique_labels)
+    # Debug: Verificar os dados após adicionar rótulos
+    print("Dados após adicionar rótulos:")
+    print(dengue_cases)
+    
+    # Criar uma paleta de cores Okabe-Ito
+    okabe_ito_colors <- c(
+      "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", 
+      "#D55E00", "#CC79A7", "#999999"
+    )
+    
+    # Definir formas específicas para cada sexo
+    shape_map <- list(
+      "Masculino" = "circle",
+      "Feminino" = "diamond",
+      "Ambos" = "triangle"  # Use a forma 'triangle' para 'Ambos'
+    )
     
     # Filtrar os dados com base nos sexos selecionados
     filtered_cases <- dengue_cases %>% filter(sex %in% input$sexo)
     
-    plot <- ggplot(filtered_cases, aes(x = year, y = incidence_rate, color = label, group = label)) +
-      geom_line() +
-      geom_point() +
-      labs(title = "Incidência de Dengue em UFs Selecionadas",
-           x = "Ano",
-           y = "Taxa de Incidência por 100,000 Pessoas",
-           color = "UF, Sexo") +
-      theme_minimal() +
-      scale_color_manual(values = color_palette) +
-      theme(axis.text.x = element_text(angle = 90, hjust = 1))  # Rotacionar rótulos do eixo x para melhor visibilidade
+    # Debug: Verificar os dados após a filtragem
+    print("Dados após a filtragem:")
+    print(filtered_cases)
     
-    plot
+    # Preparar dados para o Highcharter
+    hc_data <- filtered_cases %>%
+      group_by(label, sex) %>%
+      do(data = list(
+        name = unique(.$label),
+        data = list_parse(data.frame(x = .$year, y = .$incidence_rate)),
+        shape = shape_map[[unique(.$sex)]]
+      )) %>%
+      .$data
+    
+    # Debug: Verificar os dados preparados para o Highcharter
+    print("Dados preparados para o Highcharter:")
+    print(hc_data)
+    
+    # Garantir que hc_data seja uma lista, mesmo com um único elemento
+    if (!is.list(hc_data)) {
+      hc_data <- list(hc_data)
+    }
+    
+    # Adicionar a primeira série com configuração específica
+    hc <- highchart() %>%
+      hc_title(text = "Incidência de Dengue para as UFs selecionadas") %>%
+      hc_xAxis(title = list(text = "Ano"), categories = unique(filtered_cases$year)) %>%
+      hc_yAxis(title = list(text = "Taxa de Incidência por 100 mil pessoas")) %>%
+      hc_plotOptions(
+        series = list(lineWidth = 2)  # Aumenta a largura da linha
+      ) %>%
+      hc_add_series(name = hc_data[[1]]$name, data = hc_data[[1]]$data,
+                    color = okabe_ito_colors[1], marker = list(symbol = hc_data[[1]]$shape)) %>%
+      hc_colors(okabe_ito_colors[-1]) %>%  # Usar a paleta de cores sem o primeiro elemento
+      hc_tooltip(crosshairs = TRUE, 
+                 backgroundColor = "#FCFFC5",
+                 shared = TRUE, 
+                 borderWidth = 4) %>% 
+      hc_legend(title = list(text = "UF, Sexo")) %>%
+      hc_exporting(enabled = TRUE, 
+                   buttons = list(contextButton = list(
+                     menuItems = c('downloadPNG', 'downloadJPEG', 'downloadPDF', 'downloadSVG')
+                   )))
+    
+    # Adicionar as demais séries
+    if (length(hc_data) > 1) {
+      for (i in 2:length(hc_data)) {
+        hc <- hc %>%
+          hc_add_series(name = hc_data[[i]]$name, data = hc_data[[i]]$data,
+                        marker = list(symbol = hc_data[[i]]$shape))
+      }
+    }
+    
+    hc
   })
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  dados_mapa <- reactive({
+    req(input$update)
+    
+    if (input$tipo_mapa == "Casos Absolutos") {
+      query <- sprintf("
+        SELECT uf, SUM(counting) AS total_count
+        FROM dengue_ano
+        WHERE year = '%s' AND sex IN ('Masculino', 'Feminino')
+        GROUP BY uf
+      ", input$ano)
+      
+      result <- dbGetQuery(mysqlconnection, query)
+      
+      if (nrow(result) == 0) {
+        showNotification("Nenhum dado encontrado para o ano selecionado.", type = "error")
+        return(NULL)
+      }
+      
+      result <- result %>%
+        left_join(uf_mapping, by = "uf") %>%
+        select(sigla, total_count) %>%
+        rename(SIGLA_UF = sigla)
+      
+      if (nrow(result) == 0) {
+        showNotification("A junção dos dados falhou. Verifique os nomes das colunas.", type = "error")
+        return(NULL)
+      }
+      
+      return(result)
+    } else {
+      query_dengue <- sprintf("
+        SELECT 
+            year,
+            uf,
+            SUM(counting) AS total_count_dengue
+        FROM 
+            dengue_ano
+        WHERE 
+            year = '%s' AND
+            sex IN ('Masculino', 'Feminino')
+        GROUP BY 
+            year, uf
+      ", input$ano)
+      
+      query_population <- sprintf("
+        SELECT 
+            year,
+            uf,
+            SUM(counting) AS total_count_pop
+        FROM 
+            population
+        WHERE 
+            year = '%s' AND
+            sex IN ('Masculino', 'Feminino')
+        GROUP BY 
+            year, uf
+      ", input$ano)
+      
+      dengue_data <- dbGetQuery(mysqlconnection, query_dengue)
+      population_data <- dbGetQuery(mysqlconnection, query_population)
+      
+      merged_data <- merge(dengue_data, population_data, by = c('year', 'uf'), suffixes = c('_dengue', '_pop'))
+      
+      incidence <- merged_data %>%
+        mutate(incidence_rate = round((total_count_dengue / total_count_pop) * 100000, 2)) %>%
+        left_join(uf_mapping, by = "uf") %>%
+        select(sigla, incidence_rate) %>%
+        rename(SIGLA_UF = sigla)
+      
+      if (nrow(incidence) == 0) {
+        showNotification("A junção dos dados falhou. Verifique os nomes das colunas.", type = "error")
+        return(NULL)
+      }
+      
+      return(incidence)
+    }
+  })
+  
+  output$mapa_incid <- renderLeaflet({
+    dados <- dados_mapa()
+    
+    if (is.null(dados)) {
+      return(NULL)
+    }
+    
+    # Carregar shapefile das UFs do Brasil
+    brasil <- st_read(shapefile_path)
+    
+    if (nrow(brasil) == 0) {
+      showNotification("Falha ao carregar o shapefile. Verifique o caminho e o formato do arquivo.", type = "error")
+      return(NULL)
+    }
+    
+    # Simplificar o shapefile para reduzir o uso de memória (opcional)
+    brasil <- ms_simplify(brasil, keep = 0.05, keep_shapes = TRUE)
+    
+    # Unir dados dos casos de dengue com o shapefile
+    brasil_dengue <- brasil %>%
+      left_join(dados, by = "SIGLA_UF")
+    
+    if (nrow(brasil_dengue) == 0) {
+      showNotification("A junção dos dados com o shapefile falhou.", type = "error")
+      return(NULL)
+    }
+    
+    pal <- if (input$tipo_mapa == "Casos Absolutos") {
+      colorBin("YlOrRd", domain = brasil_dengue$total_count, bins = 5, na.color = "transparent")
+    } else {
+      colorBin("YlOrRd", domain = brasil_dengue$incidence_rate, bins = 5, na.color = "transparent")
+    }
+    
+    leaflet(data = brasil_dengue, options = leafletOptions(minZoom = 4, maxZoom = 10)) %>%
+      setView(lng = -55.491477, lat = -14.235004, zoom = 4) %>%
+      addTiles() %>%
+      addPolygons(
+        fillColor = if (input$tipo_mapa == "Casos Absolutos") {
+          ~pal(total_count)
+        } else {
+          ~pal(incidence_rate)
+        },
+        weight = 2,
+        opacity = 1,
+        color = "white",
+        dashArray = "3",
+        fillOpacity = 0.7,
+        highlightOptions = highlightOptions(
+          weight = 5,
+          color = "#666",
+          dashArray = "",
+          fillOpacity = 0.7,
+          bringToFront = TRUE
+        ),
+        label = if (input$tipo_mapa == "Casos Absolutos") {
+          ~paste(SIGLA_UF, ": ", total_count, " casos")
+        } else {
+          ~paste(SIGLA_UF, ": ", incidence_rate, " casos por 100.000 habitantes")
+        },
+        labelOptions = labelOptions(
+          style = list("font-weight" = "normal", padding = "3px 8px"),
+          textsize = "15px",
+          direction = "auto"
+        )
+      ) %>%
+      addLegend(pal = pal, values = if (input$tipo_mapa == "Casos Absolutos") {
+        ~total_count
+      } else {
+        ~incidence_rate
+      }, opacity = 0.7, title = if (input$tipo_mapa == "Casos Absolutos") {
+        "Casos de Dengue"
+      } else {
+        "Incidência de Dengue"
+      },
+      position = "bottomright")
+  })
+  
+  output$treemap <- renderHighchart({
+    dengue_cases <- data()
+    
+    # Verificar se há dados após a filtragem
+    if (nrow(dengue_cases) == 0) {
+      showNotification("Nenhum dado encontrado para os filtros selecionados.", type = "error")
+      return(NULL)
+    }
+    
+    # Se 'Todos' estiver selecionado, filtrar todas as UFs
+    if ("Todos" %in% input$uf) {
+      filtered_cases <- dengue_cases %>% filter(year == input$ano)
+    } else {
+      filtered_cases <- dengue_cases %>% filter(year == input$ano & uf %in% input$uf)
+    }
+    
+    # Debug: Verificar os dados após a filtragem por ano e UF
+    print("Dados após a filtragem por ano e UF:")
+    print(filtered_cases)
+    
+    # Calcular a incidência total por UF
+    incidence_data <- filtered_cases %>%
+      group_by(uf) %>%
+      summarise(total_incidence = sum(incidence_rate))
+    
+    # Debug: Verificar os dados após o agrupamento por UF
+    print("Dados após o agrupamento por UF:")
+    print(incidence_data)
+    
+    # Preparar os dados para o treemap
+    treemap_data <- incidence_data %>%
+      mutate(name = uf, value = total_incidence, colorValue = total_incidence) %>%
+      select(name, value, colorValue) %>%
+      list_parse()
+    
+    # Debug: Verificar os dados preparados para o treemap
+    print("Dados preparados para o treemap:")
+    print(treemap_data)
+    
+    # Criar o treemap com cores
+    highchart() %>%
+      hc_title(text = "Incidência de Dengue por UF no Ano Selecionado") %>%
+      hc_plotOptions(
+        treemap = list(
+          layoutAlgorithm = "squarified"
+        )
+      ) %>%
+      hc_add_series(
+        type = "treemap",
+        allowDrillToNode = TRUE,
+        dataLabels = list(enabled = TRUE, format = "{point.name}: {point.value}"),
+        levels = list(
+          list(
+            level = 1,
+            dataLabels = list(enabled = TRUE),
+            borderWidth = 3
+          )
+        ),
+        data = treemap_data
+      ) %>%
+      hc_colorAxis(minColor = "#FFFFFF", maxColor = "#F0E442")  # Definir uma escala de cores
+  })
+  
+  
+  data_race <- reactive({
+    req(input$update)
+    
+    # Query for dengue cases
+    query_dengue <- "
+      SELECT year, uf, SUM(counting) AS total_count
+      FROM dengue_ano
+      GROUP BY year, uf
+      ORDER BY year, uf;
+    "
+    
+    dengue_data <- dbGetQuery(mysqlconnection, query_dengue)
+    
+    # Query for population data
+    query_population <- "
+      SELECT year, uf, SUM(counting) AS total_count
+      FROM population
+      GROUP BY year, uf
+      ORDER BY year, uf;
+    "
+    
+    population_data <- dbGetQuery(mysqlconnection, query_population)
+    
+    # Join the two datasets on year and uf
+    merged_data <- merge(dengue_data, population_data, by = c("year", "uf"), suffixes = c("_dengue", "_pop"))
+    
+    # Calculate incidence rate per 100,000
+    merged_data <- merged_data %>%
+      mutate(incidence_rate = (total_count_dengue / total_count_pop) * 100000)
+    
+    return(merged_data)
+  })
+  
+#  observeEvent(input$update, {
+ #   showModal(modalDialog(
+#      title = "Gerando Gráfico",
+#      "Por favor, aguarde enquanto o gráfico está sendo gerado.",
+ #     footer = NULL
+#    ))
+#  })
+  
+  output$bar_chart_race <- renderImage({
+    # Mostrar o modal de carregamento
+   # runjs('$("#loading").show();')
+    
+    data <- data_race()
+    
+    # Check user input for cases or incidence
+    if (input$tipo_mapa == "Casos Absolutos") {
+      plot_data <- data %>%
+        select(year, uf, total_count_dengue) %>%
+        rename(value = total_count_dengue)
+    } else {
+      plot_data <- data %>%
+        select(year, uf, incidence_rate) %>%
+        rename(value = incidence_rate)
+    }
+    
+    # Preparar os dados
+    plot_data <- plot_data %>%
+      group_by(year) %>%
+      mutate(rank = rank(-value),
+             Value_rel = value/value[rank==1],
+             Value_lbl = paste0(" ", round(value, 0))) %>%
+      ungroup()
+    
+    # Criar o gráfico de barras dinâmico em formato de ranking
+    p <- ggplot(plot_data, aes(rank, group = uf, 
+                               fill = as.factor(uf), color = as.factor(uf))) +
+      geom_tile(aes(y = value/2,
+                    height = value,
+                    width = 0.9), alpha = 0.8, color = NA) +
+      geom_text(aes(y = 0, label = paste(uf, " ")), vjust = 0.2, hjust = 1) +
+      geom_text(aes(y = value, label = Value_lbl, hjust=0)) +
+      coord_flip(clip = "off", expand = FALSE) +
+      scale_y_continuous(labels = scales::comma) +
+      scale_x_reverse() +
+      guides(color = FALSE, fill = FALSE) +
+      theme_minimal() +
+      theme(axis.line = element_blank(),
+            axis.text.x = element_blank(),
+            axis.text.y = element_blank(),
+            axis.ticks = element_blank(),
+            axis.title.x = element_blank(),
+            axis.title.y = element_blank(),
+            panel.grid.major = element_blank(),
+            panel.grid.minor = element_blank(),
+            panel.grid.major.x = element_line( size=.1, color="grey" ),
+            panel.grid.minor.x = element_line( size=.1, color="grey" ),
+            plot.title = element_text(size = 24, hjust = 0.5, face = "bold", colour = "grey", vjust = -1),
+            plot.subtitle = element_text(size = 18, hjust = 0.5, face = "italic", color = "grey"),
+            plot.caption = element_text(size = 8, hjust = 0.5, face = "italic", color = "grey"),
+            plot.background = element_blank(),
+            plot.margin = margin(2,2,2,4, "cm")) +
+      transition_states(year, transition_length = 4, state_length = 1) +
+      view_follow(fixed_x = TRUE)  +
+      labs(title = paste0(input$tipo_mapa, ' de Dengue: {closest_state}'),  
+           subtitle  =  "Ranking das UFs",
+           caption  = "Fonte: Datasus (14/05/2024)")
+    
+    # Salvar a animação
+    anim <- animate(p, nframes = 300, width = 800, height = 600, renderer = gifski_renderer("bar_chart_race.gif"))
+    
+    # Esconder o modal de carregamento
+ #   runjs('$("#loading").hide();')
+    removeModal()
+    
+    list(src = "bar_chart_race.gif", contentType = "image/gif")
+  }, deleteFile = TRUE)
 }
+
+  
+  
+  
+  
+  
+  
+
+  
+  
+  
 
 
 
