@@ -47,33 +47,6 @@ server <- function(input, output) {
     p
   })"
   
-  #dados para a pirâmide etária
-  dados_fx_et <- reactive({
-    req(input$update)
-    
-    query_fx_et <- sprintf(
-      "SELECT * FROM dengue_piramide_etaria WHERE UF = '%s' AND year = '%s'",
-      input$uf, input$ano
-    )
-    dados_fx_et <- dbGetQuery(mysqlconnection, query_fx_et)
-    
-    # Garantir que 'counting' seja numérico, escrevi errado, escrevi couting
-    dados_fx_et$couting <- as.numeric(dados_fx_et$couting)
-    
-    levels_faixa_etaria <- c('0-4', '5-9', '10-14', '15-19', '20-24', '25-29', '30-34', '35-39', 
-                             '40-44', '45-49', '50-54', '55-59', '60-64', '65-69', '70-74', 
-                             '75-79', '80-84', '85-89', '90 ou mais')
-    dados_fx_et$faixa_etaria <- factor(dados_fx_et$faixa_etaria, levels = levels_faixa_etaria, ordered = TRUE)
-    
-    
-    # Verificar se há linhas após a consulta
-    if (nrow(dados_fx_et) == 0) {
-      showNotification("Nenhum dado encontrado para os parâmetros selecionados.", type = "error")
-      return(NULL)
-    }
-    
-    return(dados_fx_et)
-  })
   
   dados_barplot <- reactive({
     req(input$uf)
@@ -199,8 +172,47 @@ ORDER BY
   })
   
   
-
+#### Pirâmide etária
+  #dados para a pirâmide etária
+  dados_fx_et <- reactive({
+    req(input$update)
+    
+    doenca_selecionada_pe <- switch(input$doenca_pe,
+                                    "Dengue" = "dengue_piramide_etaria",
+                                    "Doença de Chagas" = "chagas_piramide_etaria",
+                                    "Esquistossomose" = "esquistossomose_piramide_etaria",
+                                    "Envenenamento por picada de cobra" = "envenenamento_picada_piramide_etaria",
+                                    "Febre chikungunya" = "febre_chikungunya_piramide_etaria",
+                                    "Hanseníase" = "hanseniase_piramide_etaria",
+                                    "Leishmaniose visceral" = "leishmaniose_visceral_piramide_etaria",
+                                    "Leishmaniose tegumentar americana" = "leishmaniose_tegumentar_piramide_etaria",
+                                    "Raiva humana" = "raiva_humana_piramide_etaria")
+    
+    query_fx_et <- sprintf(
+      "SELECT * FROM %s WHERE UF = '%s' AND year = '%s'",
+      doenca_selecionada_pe, input$uf, input$ano
+    )
+    dados_fx_et <- dbGetQuery(mysqlconnection, query_fx_et)
+    
+    # Garantir que 'counting' seja numérico
+    dados_fx_et$counting <- as.numeric(dados_fx_et$counting)
+    
+    levels_faixa_etaria <- c('0-4', '5-9', '10-14', '15-19', '20-24', '25-29', '30-34', '35-39', 
+                             '40-44', '45-49', '50-54', '55-59', '60-64', '65-69', '70-74', 
+                             '75-79', '80-84', '85-89', '90 ou mais')
+    dados_fx_et$faixa_etaria <- factor(dados_fx_et$faixa_etaria, levels = levels_faixa_etaria, ordered = TRUE)
+    
+    
+    # Verificar se há linhas após a consulta
+    if (nrow(dados_fx_et) == 0) {
+      showNotification("Nenhum dado encontrado para os parâmetros selecionados.", type = "error")
+      return(NULL)
+    }
+    
+    return(dados_fx_et)
+  })
   
+ # Plot da pirâmide etária
   output$piram_et <- renderPlotly({
     dados_fx_et <- dados_fx_et()
     
@@ -219,15 +231,15 @@ ORDER BY
     # Create the plotly plot directly
     piramide <- plot_ly() %>%
       add_trace(data = dados_masculino,
-                x = ~-couting, y = ~faixa_etaria, type = 'bar', orientation = 'h',
+                x = ~-counting, y = ~faixa_etaria, type = 'bar', orientation = 'h',
                 name = 'Masculino', marker = list(color = '#049899')) %>%
       add_trace(data = dados_feminino,
-                x = ~-couting, y = ~faixa_etaria, type = 'bar', orientation = 'h',
+                x = ~-counting, y = ~faixa_etaria, type = 'bar', orientation = 'h',
                 name = 'Feminino', marker = list(color = '#ed9400')) %>%
       layout(
         barmode = 'overlay',
-        xaxis = list(title = 'População', showticklabels = FALSE, tickvals = seq(-max(abs(dados_fx_et$couting)), max(abs(dados_fx_et$couting)), by = 10000),
-                     ticktext = abs(seq(-max(abs(dados_fx_et$couting)), max(abs(dados_fx_et$couting)), by = 10000))),
+        xaxis = list(title = 'População', showticklabels = FALSE, tickvals = seq(-max(abs(dados_fx_et$counting)), max(abs(dados_fx_et$counting)), by = 10000),
+                     ticktext = abs(seq(-max(abs(dados_fx_et$counting)), max(abs(dados_fx_et$counting)), by = 10000))),
         yaxis = list(title = 'Faixa Etária'),
         title = sprintf("Pirâmide etária para o ano de %s", input$ano,"em '%s'", input$uf),
         legend = list(title = list(text = 'Sexo')),

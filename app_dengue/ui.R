@@ -98,37 +98,91 @@ botao <- actionButton("update", "Atualizar plot")
 
 tipo_mapa <-  radioButtons('tipo_mapa', 'Selecione o tipo de mapa', choices = c("Casos Absolutos", "Incidência"))
 
+selecionar_doenca_serie_temporal <- pickerInput('doenca_st', "Selecione a doença de interesse",
+                                 choices = c("Dengue", "Doença de Chagas",
+                                             "Esquistossomose", "Envenenamento por picada de cobra",
+                                             "Febre chikungunya", "Hanseníase",
+                                             "Leishmaniose visceral", "Leishmaniose tegumentar americana",
+                                             "Raiva humana"))
+
+selecionar_doenca_piramide_etaria <- pickerInput('doenca_pe', "Selecione a doença de interesse",
+                                                choices = c("Dengue", "Doença de Chagas",
+                                                            "Esquistossomose", "Envenenamento por picada de cobra",
+                                                            "Febre chikungunya", "Hanseníase",
+                                                            "Leishmaniose visceral", "Leishmaniose tegumentar americana",
+                                                            "Raiva humana"))
+
+selecionar_doenca_estatistica_descritiva <- pickerInput('doenca_ed', "Selecione a doença de interesse",
+                                                choices = c("Dengue", "Doença de Chagas",
+                                                            "Esquistossomose", "Envenenamento por picada de cobra",
+                                                            "Febre chikungunya", "Hanseníase",
+                                                            "Leishmaniose visceral", "Leishmaniose tegumentar americana",
+                                                            "Raiva humana"))
+
+selecionar_doenca_mapa_incidencia <- pickerInput('doenca_mi', "Selecione a doença de interesse",
+                                                choices = c("Dengue", "Doença de Chagas",
+                                                            "Esquistossomose", "Envenenamento por picada de cobra",
+                                                            "Febre chikungunya", "Hanseníase",
+                                                            "Leishmaniose visceral", "Leishmaniose tegumentar americana",
+                                                            "Raiva humana"))
+
+selecionar_doenca_treemap <- pickerInput('doenca_tr', "Selecione a doença de interesse",
+                                                choices = c("Dengue", "Doença de Chagas",
+                                                            "Esquistossomose", "Envenenamento por picada de cobra",
+                                                            "Febre chikungunya", "Hanseníase",
+                                                            "Leishmaniose visceral", "Leishmaniose tegumentar americana",
+                                                            "Raiva humana"))
+
+selecionar_doenca_animacao_barras <- pickerInput('doenca_ba', "Selecione a doença de interesse",
+                                                choices = c("Dengue", "Doença de Chagas",
+                                                            "Esquistossomose", "Envenenamento por picada de cobra",
+                                                            "Febre chikungunya", "Hanseníase",
+                                                            "Leishmaniose visceral", "Leishmaniose tegumentar americana",
+                                                            "Raiva humana"))
+
 ui <- page_sidebar(
   title = 'DTNs no Brasil',
   sidebar = list(
     useShinyjs(), 
-    selecionar_uf,  # Movido para fora dos conditionalPanel
+    # Movido para fora dos conditionalPanel
     # Movido para fora dos conditionalPanel
     conditionalPanel(
       condition = "input.navset == 'Série temporal'",
+      selecionar_doenca_serie_temporal,
+      selecionar_uf,
       selecionar_sexo,
       selecionar_idade
       
     ),
     conditionalPanel(
       condition = "input.navset == 'Pirâmide Etária'",
+      selecionar_doenca_piramide_etaria,
+      selecionar_uf,
       selecionar_ano
+      
     ),
     conditionalPanel(
-      condition = "input.navset == 'Estatística Descritiva'"
+      condition = "input.navset == 'Estatística Descritiva'",
+      selecionar_doenca_estatistica_descritiva,
+      selecionar_uf
       
     ),
     conditionalPanel(
       condition = "input.navset == 'Mapa Incidência'",
+      selecionar_doenca_mapa_incidencia,
       selecionar_ano,
       tipo_mapa
     ),
     conditionalPanel(
       condition = "input.navset == 'Treemap'",
+      selecionar_doenca_treemap,
+      selecionar_uf,
       selecionar_ano
     ),
     conditionalPanel(
       condition = "input.navset == 'Animação - barras'",
+      selecionar_doenca_animacao_barras,
+      selecionar_uf,
       tipo_mapa
     ),
     botao
